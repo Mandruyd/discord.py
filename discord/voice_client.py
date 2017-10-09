@@ -118,10 +118,9 @@ class StreamPlayer(threading.Thread):
         except Exception as e:
             self._current_error = e
             self.stop()
-        finally:
-            self._call_after()
 
-    def _call_after(self):
+    def stop(self):
+        self._end.set()
         if self.after is not None:
             try:
                 arg_count = len(inspect.signature(self.after).parameters)
@@ -136,9 +135,6 @@ class StreamPlayer(threading.Thread):
                     self.after(self)
             except:
                 pass
-
-    def stop(self):
-        self._end.set()
 
     @property
     def error(self):
@@ -367,7 +363,7 @@ class VoiceClient:
 
         Basic usage: ::
 
-            voice = await client.join_voice_channel(channel)
+            voice = yield from client.join_voice_channel(channel)
             player = voice.create_ffmpeg_player('cool.mp3')
             player.start()
 
@@ -537,10 +533,15 @@ class VoiceClient:
             info = info['entries'][0]
 
         log.info('playing URL {}'.format(url))
+        try:
+            webpage_url = info['entries'][0]['webpage_url']
+        except:
+            webpage_url = song
         download_url = info['url']
         player = self.create_ffmpeg_player(download_url, **kwargs)
 
         # set the dynamic attributes from the info extraction
+        player.webpage_url = webpage_url
         player.download_url = download_url
         player.url = url
         player.yt = ydl
